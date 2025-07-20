@@ -1,0 +1,31 @@
+services:
+  mqtt-broker:
+    image: eclipse-mosquitto:2
+    container_name: mqtt-broker
+    ports:
+      - "1883:1883"
+      - "9001:9001"  # WS for dashboard
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+    restart: unless-stopped
+
+  central_station:
+    build: .
+    container_name: central-station
+    depends_on:
+      - mqtt-broker
+    environment:
+      - BROKER_ADDRESS=mqtt-broker
+      - MQTT_PORT=1883
+    volumes:
+      - .:/app
+    restart: unless-stopped
+
+  dashboard:
+    image: nginx:alpine
+    container_name: dashboard
+    ports:
+      - "8080:80"
+    volumes:
+      - ./dashboard:/usr/share/nginx/html:ro
+    restart: unless-stopped

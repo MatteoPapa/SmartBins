@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>SmartBins Realtime Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- MQTT.js -->
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+    <style>
+        .trash-bin-img-wrapper {
+            position: relative;
+            /* Match these to the scaled‑up image dimensions */
+            width: 110px;
+            /* 100px × 1.1 */
+            height: 165px;
+            /* 150px × 1.1 */
+            margin: 0 auto;
+            overflow: hidden;
+        }
+
+        /* Put the bin image inside the wrapper at 100% fill */
+        .trash-bin-img-wrapper::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('trashbin.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            z-index: 2;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        /* The fill will now sit exactly under that, lining up top‑to‑bottom */
+        .trash-fill {
+            position: absolute;
+            left: 10%;
+            bottom: 0;
+            width: 83%;
+            height: 0;
+            /* set by JS */
+            background-color: #28a745;
+            z-index: 1;
+            transition: height 0.5s ease, background-color 0.5s ease;
+
+            display: flex;
+            /* keep flexbox */
+            justify-content: center;
+            /* center horizontally */
+            align-items: center;
+            /* center vertically */
+
+            /* you can ditch the bottom padding now */
+            padding: 0;
+
+            font-weight: bold;
+            font-size: 0.9rem;
+            color: #fff;
+            text-align: center;
+            /* fallback for plain text centering */
+        }
+
+        .trash-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 3;
+            /* above the ::after at z‑index:2 */
+            pointer-events: none;
+            /* clicks pass through */
+            font-weight: bold;
+            font-size: 0.9rem;
+            color: #000000;
+            /* or whatever contrast you need */
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.7);
+            white-space: nowrap;
+        }
+
+        /* shake keyframes */
+        @keyframes shake {
+            0% {
+                transform: translate(0, 0) rotate(0);
+            }
+
+            20% {
+                transform: translate(-4px, 0) rotate(-2deg);
+            }
+
+            40% {
+                transform: translate(4px, 0) rotate(2deg);
+            }
+
+            60% {
+                transform: translate(-4px, 0) rotate(-1deg);
+            }
+
+            80% {
+                transform: translate(4px, 0) rotate(1deg);
+            }
+
+            100% {
+                transform: translate(0, 0) rotate(0);
+            }
+        }
+
+        /* apply shake */
+        .shake {
+            animation: shake 0.6s ease-in-out;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div class="container py-5">
+        <img src="logo.png" alt="SmartBins Logo" class="mb-1 d-block mx-auto" style="max-width: 300px;">
+        <h4 class="text-center mb-5 text-muted">Realtime Dashboard</h4>
+        <div id="bin-container" class="row justify-content-center g-4">
+            <!-- Bin cards will be injected here -->
+        </div>
+    </div>
+
+    <script>
+        const N_BINS = 5;
+        const MQTT_TOPIC_BASE = "bins"; // Make sure this matches your publish topic
+        const binContainer = document.getElementById('bin-container');
+
+        // Generate trash bin cards
+        for (let i = 0; i < N_BINS; i++) {
+            const col = document.createElement('div');
+            col.className = 'col-md-2 col-sm-4 col-6';
+            col.innerHTML = `
+  <div class="card shadow text-center border-0">
+    <div class="card-body">
+        <div class="trash-bin-img-wrapper">
+            <div id="bin${i}-fill" class="trash-fill"></div>
+            <div id="bin${i}-text" class="trash-text"></div>
+        </div>
+        <h5 class="card-title pt-3">Bin ${i}</h5>
+    </div>
+  </div>
+`;
+
+
+            binContainer.appendChild(col);
+        }
+
+        // Connect to MQTT broker over WebSocket
+        const client = mqtt.connect('ws://localhost:9001');
+        // track previous levels to detect a “collection” (drop in level)
+        const prevLevels = Array(N_BINS).fill(0);
+
+        client.on('connect', () => {
+            console.log("📡 Connected to MQTT broker via WebSocket");
+            for (let i = 0; i < N_BINS; i++) {
+                client.subscribe(`${MQTT_TOPIC_BASE}/bin${i}/fill_level`);
+            }
+        });
+
+        client.on('message', (topic, message) => {
+            const binId = topic.split('/')[1]; // e.g., "bin0"
+            const idx = parseInt(binId.replace('bin', ''), 10);
+            const level = parseInt(message.toString(), 10);
+
+            // 1) if level dropped since last update → shake!
+            if (level < prevLevels[idx]) {
+                const fillEl = document.getElementById(`${binId}-fill`);
+                // grab the wrapper instead of the card
+                const wrapper = fillEl.closest('.trash-bin-img-wrapper');
+
+                wrapper.classList.add('shake');
+                wrapper.addEventListener('animationend', () => {
+                    wrapper.classList.remove('shake');
+                }, { once: true });
+            }
+
+
+            // 2) update fill bar & text as before
+            const fill = document.getElementById(`${binId}-fill`);
+            fill.style.height = `${level}%`;
+            document.getElementById(`${binId}-text`).textContent = `${level}%`;
+
+            // 3) update colors
+            if (level >= 95) {
+                fill.style.backgroundColor = '#dc3545';
+                fill.style.color = '#fff';
+            } else if (level >= 70) {
+                fill.style.backgroundColor = '#ffc107';
+                fill.style.color = '#000';
+            } else {
+                fill.style.backgroundColor = '#28a745';
+                fill.style.color = '#fff';
+            }
+
+            // 4) remember this level for next time
+            prevLevels[idx] = level;
+        });
+
+    </script>
+</body>
+
+</html>

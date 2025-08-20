@@ -1,7 +1,9 @@
 # SmartBins
 
+<img width="1900" height="1013" alt="Schermata del 2025-08-20 10-41-53" src="https://github.com/user-attachments/assets/f2139d56-f0ed-4667-9ec1-ceebabfc5677" />
+
 Simulation-based optimization of waste collection with an IoT network of **smart bins**.  
-Bins publish fill levels over MQTT; a **Central Station** applies either an **MDP policy** (precomputed via value iteration) or a simple **threshold policy** to decide when to collect. A lightweight **web dashboard** shows live bin status.
+Bins publish fill levels over MQTT; a **Central Station** applies an **MDP policy** (precomputed via value iteration) to decide when to collect. A lightweight **web dashboard** shows live bin status.
 
 ## Architecture
 

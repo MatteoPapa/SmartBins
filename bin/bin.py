@@ -6,7 +6,7 @@ class Bin:
         self.id = bin_id
         self.max_fill = MAX_FILL
         self.max_increment = MAX_INCREMENT
-        self.fill = 0  # percentuale iniziale (0-100)
+        self.fill = 0 
 
     def step(self, mqtt_client=None):
         increment = random.randint(0, self.max_increment)

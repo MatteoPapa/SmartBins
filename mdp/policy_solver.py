@@ -9,8 +9,7 @@ def build_single_trans():
     trans = {}
     D = DISCRETIZATION
     K = MAX_INCREMENT
-    denom = (K + 1) * D  # 6 * D
-    # Precompute sum_{k=0..K} max(0, D-k)
+    denom = (K + 1) * D
     s_part = sum(max(0, D - k) for k in range(K + 1))
     for b in STATES:
         probs = {}
@@ -36,7 +35,6 @@ def reward(state, action, next_state):
 def get_transitions(state, action):
     if action == 'wait':
         per_bin = [SINGLE_TRANS[s] for s in state]
-        # prepariamo liste (next, p)
         lists = [list(d.items()) for d in per_bin]
         for combo in itertools.product(*lists):
             ns = tuple(c[0] for c in combo)

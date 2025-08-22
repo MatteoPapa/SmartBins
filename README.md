@@ -41,51 +41,6 @@ docker compose logs -f
 > If you get “address already in use” on `1883`, you probably have a local Mosquitto running.  
 > Stop it (`sudo systemctl stop mosquitto`) **or** edit `docker-compose.yml` to map a different host port, e.g. `1884:1883`, and set `MQTT_PORT=1884` for the Central Station / simulator.
 
-## Run the Simulator (host)
-
-```bash
-# In another terminal
-python3 bin_simulator.py
-```
-
-> Ensure your simulator points to the broker:
-> - If running **on host**, set `BROKER_ADDRESS=localhost` in `config.py`.
-> - If running **in Docker**, use `BROKER_ADDRESS=mqtt-broker`.
-
-## Central Station (policy choice)
-
-By default, `central_station.py` loads `mdp/policy.pkl`.  
-If you added the minimal logging/policy toggle as discussed, you can switch:
-
-```python
-# central_station.py (at the bottom)
-station = CentralStation(use_mdp=True)   # MDP
-# station = CentralStation(use_mdp=False)  # Threshold (80%)
-```
-
-Run it:
-
-```bash
-python3 central_station.py
-```
-
-This writes CSV logs like:
-```
-results_mdp_YYYYmmdd_HHMMSS.csv
-results_threshold_YYYYmmdd_HHMMSS.csv
-```
-
-Columns: `t, bin_states, action, step_cost, total_cost`.
-
-## Build / Rebuild the MDP Policy
-
-If you want to recompute the policy:
-
-```bash
-python3 mdp/policy_solver.py
-# Produces mdp/policy.pkl
-```
-
 ## Web Dashboard
 
 Open:
@@ -93,7 +48,6 @@ Open:
 http://localhost:8080
 ```
 It connects to Mosquitto via WebSockets on `ws://localhost:9001`.
-
 
 ## Troubleshooting
 

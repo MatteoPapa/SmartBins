@@ -15,16 +15,12 @@
     <style>
         .trash-bin-img-wrapper {
             position: relative;
-            /* Match these to the scaled‑up image dimensions */
             width: 110px;
-            /* 100px × 1.1 */
             height: 165px;
-            /* 150px × 1.1 */
             margin: 0 auto;
             overflow: hidden;
         }
 
-        /* Put the bin image inside the wrapper at 100% fill */
         .trash-bin-img-wrapper::after {
             content: "";
             position: absolute;
@@ -41,33 +37,25 @@
             overflow: hidden;
         }
 
-        /* The fill will now sit exactly under that, lining up top‑to‑bottom */
         .trash-fill {
             position: absolute;
             left: 10%;
             bottom: 0;
             width: 83%;
             height: 0;
-            /* set by JS */
             background-color: #28a745;
             z-index: 1;
             transition: height 0.5s ease, background-color 0.5s ease;
 
             display: flex;
-            /* keep flexbox */
             justify-content: center;
-            /* center horizontally */
             align-items: center;
-            /* center vertically */
-
-            /* you can ditch the bottom padding now */
             padding: 0;
 
             font-weight: bold;
             font-size: 0.9rem;
             color: #fff;
             text-align: center;
-            /* fallback for plain text centering */
         }
 
         .trash-text {
@@ -76,13 +64,10 @@
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 3;
-            /* above the ::after at z‑index:2 */
             pointer-events: none;
-            /* clicks pass through */
             font-weight: bold;
             font-size: 0.9rem;
             color: #000000;
-            /* or whatever contrast you need */
             text-shadow: 0 0 5px rgba(255, 255, 255, 0.7);
             white-space: nowrap;
         }
@@ -114,7 +99,7 @@
             }
         }
 
-        /* apply shake */
+        /* Shake Animation */
         .shake {
             animation: shake 0.6s ease-in-out;
         }
@@ -127,16 +112,16 @@
         <img src="logo.png" alt="SmartBins Logo" class="mb-1 d-block mx-auto" style="max-width: 300px;">
         <h4 class="text-center mb-5 text-muted">Realtime Dashboard</h4>
         <div id="bin-container" class="row justify-content-center g-4">
-            <!-- Bin cards will be injected here -->
+            <!-- Bin cards injected here -->
         </div>
     </div>
 
     <script>
         const N_BINS = 5;
-        const MQTT_TOPIC_BASE = "bins"; // Make sure this matches your publish topic
+        const MQTT_TOPIC_BASE = "bins";
         const binContainer = document.getElementById('bin-container');
 
-        // Generate trash bin cards
+        //Trash Bin Cards
         for (let i = 0; i < N_BINS; i++) {
             const col = document.createElement('div');
             col.className = 'col-md-2 col-sm-4 col-6';
@@ -158,7 +143,6 @@
 
         // Connect to MQTT broker over WebSocket
         const client = mqtt.connect('ws://localhost:9001');
-        // track previous levels to detect a “collection” (drop in level)
         const prevLevels = Array(N_BINS).fill(0);
 
         client.on('connect', () => {
@@ -173,10 +157,8 @@
             const idx = parseInt(binId.replace('bin', ''), 10);
             const level = parseInt(message.toString(), 10);
 
-            // 1) if level dropped since last update → shake!
             if (level < prevLevels[idx]) {
                 const fillEl = document.getElementById(`${binId}-fill`);
-                // grab the wrapper instead of the card
                 const wrapper = fillEl.closest('.trash-bin-img-wrapper');
 
                 wrapper.classList.add('shake');
@@ -186,12 +168,11 @@
             }
 
 
-            // 2) update fill bar & text as before
             const fill = document.getElementById(`${binId}-fill`);
             fill.style.height = `${level}%`;
             document.getElementById(`${binId}-text`).textContent = `${level}%`;
 
-            // 3) update colors
+            // 3) Colors
             if (level >= 95) {
                 fill.style.backgroundColor = '#dc3545';
                 fill.style.color = '#fff';
@@ -203,7 +184,6 @@
                 fill.style.color = '#fff';
             }
 
-            // 4) remember this level for next time
             prevLevels[idx] = level;
         });
 

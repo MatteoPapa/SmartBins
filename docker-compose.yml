@@ -11,7 +11,7 @@ services:
 
   central_station:
     build: .
-    container_name: central-station
+    container_name: simulation-app
     depends_on:
       - mqtt-broker
     environment:
